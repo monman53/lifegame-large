@@ -1,0 +1,237 @@
+<!doctype html>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+}
+</style>
+
+<div id="app">
+    <canvas id="canvas" style="height: 100%; width: 100%;"></canvas>
+    <!--<div>-->
+        <!--<table>-->
+            <!--<tbody>-->
+                <!--<tr>-->
+                    <!--<th>Frequency</th>-->
+                    <!--<td><input type='range' min='4' max='600' step='any' v-model='uniforms.f.value' /></td>-->
+                <!--</tr>-->
+                <!--<tr>-->
+                    <!--<th>Type</th>-->
+                    <!--<td><input type='radio' id='circle' value='0' v-model='uniforms.type.value' /><label for='circle'>Circle</label></td>-->
+                    <!--<td><input type='radio' id='sin' value='1' v-model='uniforms.type.value' /><label for='sin'>cos</label></td>-->
+                <!--</tr>-->
+                <!--<tr>-->
+                    <!--<th>RGB</th>-->
+                    <!--<td><input type='color' v-model='color' /></td>-->
+                <!--</tr>-->
+            <!--</tbody>-->
+        <!--</table>-->
+        <!--<table>-->
+            <!--<thead>-->
+                <!--<tr>-->
+                    <!--<th></th>-->
+                    <!--<th>%</th>-->
+                    <!--<th>θ</th>-->
+                <!--</tr>-->
+            <!--</thead>-->
+            <!--<tbody>-->
+                <!--<tr>-->
+                    <!--<th>Cyan</th>-->
+                    <!--<td><input type='range' min='0' max='1' step='any' v-model='uniforms.a.value.x' /></td>-->
+                    <!--<td><input type='range' min='0' max='0.5' step='any' v-model='uniforms.r.value.x' /></td>-->
+                <!--</tr>-->
+                <!--<tr>-->
+                    <!--<th>Magenta</th>-->
+                    <!--<td><input type='range' min='0' max='1' step='any' v-model='uniforms.a.value.y' /></td>-->
+                    <!--<td><input type='range' min='0' max='0.5' step='any' v-model='uniforms.r.value.y' /></td>-->
+                <!--</tr>-->
+                <!--<tr>-->
+                    <!--<th>Yellow</th>-->
+                    <!--<td><input type='range' min='0' max='1' step='any' v-model='uniforms.a.value.z' /></td>-->
+                    <!--<td><input type='range' min='0' max='0.5' step='any' v-model='uniforms.r.value.z' /></td>-->
+                <!--</tr>-->
+                <!--<tr>-->
+                    <!--<th>blacK</th>-->
+                    <!--<td><input type='range' min='0' max='1' step='any' v-model='uniforms.a.value.w' /></td>-->
+                    <!--<td><input type='range' min='0' max='0.5' step='any' v-model='uniforms.r.value.w' /></td>-->
+                <!--</tr>-->
+            <!--</tbody>-->
+        <!--</table>-->
+    <!--</div>-->
+</div>
+
+<script src='js/three.min.js'></script>
+<!--<script src="js/vue.js"></script>-->
+<script src="js/vue.min.js"></script>
+
+<script type="x-shader/x-vertex" id="vertexShader">
+varying vec2 vUv;
+
+void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+</script>
+
+<script type="x-shader/x-fragment" id="initialShader">
+varying vec2 vUv;
+uniform float screenWidth;
+uniform float screenHeight;
+uniform sampler2D texture;
+
+float random(vec2 st) {
+    return fract(sin(dot(st, vec2(12.9898,78.233))) * 43758.5453123);
+}
+
+void main() {
+    gl_FragColor = random((gl_FragCoord.xy) * 0.001) < 0.5 ? vec4(1.0, 0.0, 0.0, 1.0) : vec4(0.0, 0.0, 0.0, 1.0);
+}
+</script>
+
+<script type="x-shader/x-fragment" id="computeShader">
+varying vec2 vUv;
+uniform float screenWidth;
+uniform float screenHeight;
+uniform sampler2D texture;
+
+void main() {
+    float x = vUv.x;
+    float y = vUv.y;
+    float dx = 1. / screenWidth;
+    float dy = 1. / screenHeight;
+    int cnt = 0;
+
+    float xml = x - dx; xml = (xml < 0.) ? xml + 1. : xml;
+    float xpl = x + dx; xpl = (xpl > 1.) ? xpl - 1. : xpl;
+    float yml = y - dy; yml = (yml < 0.) ? yml + 1. : yml;
+    float ypl = y + dy; ypl = (ypl > 1.) ? ypl - 1. : ypl;
+
+    if(texture2D(texture, vec2(xpl, y)).r   > 0.5) cnt++;
+    if(texture2D(texture, vec2(xpl, ypl)).r > 0.5) cnt++;
+    if(texture2D(texture, vec2(x, ypl)).r   > 0.5) cnt++;
+    if(texture2D(texture, vec2(xml, ypl)).r > 0.5) cnt++;
+    if(texture2D(texture, vec2(xml, y)).r   > 0.5) cnt++;
+    if(texture2D(texture, vec2(xml, yml)).r > 0.5) cnt++;
+    if(texture2D(texture, vec2(x, yml)).r   > 0.5) cnt++;
+    if(texture2D(texture, vec2(xpl, yml)).r > 0.5) cnt++;
+
+    if(texture2D(texture, vec2(x, y)).r > 0.5){
+        if(cnt <= 1){
+            gl_FragColor = vec4(0, 0, 0, 1);
+        }else if(cnt <= 3){
+            gl_FragColor = vec4(1, 0, 0, 1);
+        }else{
+            gl_FragColor = vec4(0, 0, 0, 1);
+        }
+    }else{
+        if(cnt == 3){
+            gl_FragColor = vec4(1, 0, 0, 1);
+        }else{
+            gl_FragColor = vec4(0, 0, 0, 1);
+        }
+    }
+}
+</script>
+
+<script type="x-shader/x-fragment" id="fragmentShader">
+varying vec2 vUv;
+uniform float screenWidth;
+uniform float screenHeight;
+uniform sampler2D texture;
+
+void main() {
+    if(texture2D(texture, vUv).r < 0.5){
+        gl_FragColor = vec4(0, 0, 0, 1);
+    }else{
+        gl_FragColor = vec4(1, 1, 0, 1);
+    }
+}
+</script>
+
+
+<script>
+var app = new Vue({
+    el: "#app",
+    mounted: function() {
+        this.canvas = document.getElementById("canvas");
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.uniforms = {
+            screenWidth:    {type: "f", value: window.innerWidth}, 
+            screenHeight:   {type: "f", value: window.innerHeight}, 
+            texture:        {type: "t", value: undefined}
+        }
+        this.renderer = new THREE.WebGLRenderer({canvas: this.canvas});
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5, -10000, 10000);
+        this.camera.position.z = 100;
+        this.scene.add(this.camera);
+
+        this.initialShaderMaterial = new THREE.ShaderMaterial({
+            uniforms: this.uniforms, 
+            vertexShader: document.getElementById('vertexShader').textContent,
+            fragmentShader: document.getElementById('initialShader').textContent,
+        });
+
+        this.computeShaderMaterial = new THREE.ShaderMaterial({
+            uniforms: this.uniforms, 
+            vertexShader: document.getElementById('vertexShader').textContent,
+            fragmentShader: document.getElementById('computeShader').textContent,
+        });
+
+        this.flagmentShaderMaterial = new THREE.ShaderMaterial({
+            uniforms: this.uniforms, 
+            vertexShader: document.getElementById('vertexShader').textContent,
+            fragmentShader: document.getElementById('fragmentShader').textContent,
+        });
+
+        this.texture = [];
+        for(var i=0;i<2;i++){
+            this.texture.push(new THREE.WebGLRenderTarget(
+                this.canvas.width, 
+                this.canvas.height,
+                {
+                    minFilter: THREE.LinearFilter,
+                    magFilter: THREE.LinearFilter,
+                    format: THREE.RGBAFormat, 
+                    type: THREE.FloatType, 
+                }
+            ));
+        }
+
+        var plane = new THREE.PlaneGeometry(1.0, 1.0);
+        this.screenQ = new THREE.Mesh(plane, this.flagmentShaderMaterial)
+        this.scene.add(this.screenQ);
+
+        // initial render
+        this.screenQ.material = this.initialShaderMaterial;
+        this.renderer.setRenderTarget(this.texture[0]);
+        this.renderer.render(this.scene, this.camera);
+
+        this.uniforms.texture.value = this.texture[0];
+        this.pingpong = 0;
+        this.animate();
+    },
+    methods: {
+        animate: function() {
+            this.screenQ.material = this.computeShaderMaterial;
+            this.renderer.setRenderTarget(this.texture[1-this.pingpong]);
+            this.renderer.render(this.scene, this.camera);
+
+            this.uniforms.texture.value = this.texture[1-this.pingpong];
+            this.screenQ.material = this.flagmentShaderMaterial;
+            this.renderer.setRenderTarget(null);
+            this.renderer.render(this.scene, this.camera);
+
+            this.pingpong = 1-this.pingpong;
+
+            requestAnimationFrame( this.animate );
+        }
+    },
+    watch: {
+    }
+});
+</script>
