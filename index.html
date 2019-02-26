@@ -133,11 +133,11 @@ void main() {
     float y = gl_FragCoord.y / screenHeight;
 
     vec4 tex = texture2D(texture, vec2(x, y));
-    if(tex.r > 0.5){
-        gl_FragColor = vec4(0.8, 0.8, 0.4, 1.);
-    }
     if(tex.g > 0.5){
         gl_FragColor = vec4(0.8, 0.8, 0.4, 1.)*min(float(timer-500)/500., 1.);
+    }
+    if(tex.r > 0.5){
+        gl_FragColor = vec4(0.8, 0.8, 0.4, 1.);
     }
 }
 </script>
