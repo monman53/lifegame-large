@@ -214,16 +214,17 @@ var app = new Vue({
         }, 
         animate: function() {
             this.screenQ.material = this.computeShaderMaterial;
-            this.renderer.setRenderTarget(this.texture[1-this.pingpong]);
-            this.renderer.render(this.scene, this.camera);
-            this.uniforms.texture.value = this.texture[1-this.pingpong];
+            for(var i=0;i<3;i++){
+                this.renderer.setRenderTarget(this.texture[1-this.pingpong]);
+                this.renderer.render(this.scene, this.camera);
+                this.uniforms.texture.value = this.texture[1-this.pingpong];
+                this.pingpong = 1-this.pingpong;
+                this.uniforms.timer.value += 1;
+            }
 
             this.screenQ.material = this.flagmentShaderMaterial;
             this.renderer.setRenderTarget(null);
             this.renderer.render(this.scene, this.camera);
-
-            this.pingpong = 1-this.pingpong;
-            this.uniforms.timer.value += 1;
 
             requestAnimationFrame( this.animate );
         }
