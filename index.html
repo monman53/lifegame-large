@@ -30,6 +30,7 @@ void main() {
 uniform float screenWidth;
 uniform float screenHeight;
 uniform sampler2D texture;
+uniform sampler2D logoTexture;
 
 void main() {
     float x = gl_FragCoord.x;
@@ -50,6 +51,7 @@ uniform int timer;
 uniform float screenWidth;
 uniform float screenHeight;
 uniform sampler2D texture;
+uniform sampler2D logoTexture;
 
 void main() {
     float x = gl_FragCoord.x / screenWidth;
@@ -72,42 +74,70 @@ void main() {
     if(texture2D(texture, vec2(x, yml)).r   > 0.5) cnt++;
     if(texture2D(texture, vec2(xpl, yml)).r > 0.5) cnt++;
 
-    if(texture2D(texture, vec2(x, y)).r > 0.5){
+    // logo
+    float nx = gl_FragCoord.x - float(int(screenWidth/2.))  + 256.;
+    float ny = gl_FragCoord.y - float(int(screenHeight/2.)) + 256.;
+
+    int logo = 0;
+    if(texture2D(logoTexture, vec2(nx/512., ny/512.)).r > 0.5 && timer > 500){
+        logo = 1;
+    }
+
+    // conway's game rule
+    vec4 tex = texture2D(texture, vec2(x, y));
+    vec4 ans = tex;
+    if(tex.r > 0.5){
         if(cnt <= 1){
-            gl_FragColor = vec4(0, 0, 0, 0);
+            ans.r = 0.;
         }else if(cnt <= 3){
-            gl_FragColor = vec4(1, 0, 0, 0);
+            if(logo == 1){
+                //ans.g = 1.;
+            }
+            ans.r = 1.;
         }else{
-            gl_FragColor = vec4(0, 0, 0, 0);
+            ans.r = 0.;
         }
     }else{
         if(cnt == 3){
-            gl_FragColor = vec4(1, 0, 0, 0);
+            if(logo == 1){
+                ans.g = 1.;
+            }
+            ans.r = 1.;
         }else{
-            gl_FragColor = vec4(0, 0, 0, 0);
+            ans.r = 0.;
         }
     }
 
-    if(timer == 400){
+    // trigger
+    if(timer == 450){
         if(abs(gl_FragCoord.x - screenWidth/2.) < 1. && abs(y-0.5) < 0.5*dy){
             gl_FragColor = vec4(0, 0, 0, 0);
+            ans.r = 0.;
         }
     }
+
+    gl_FragColor = ans;
 }
 </script>
 
 <script type="x-shader/x-fragment" id="fragmentShader">
+uniform int timer;
 uniform float screenWidth;
 uniform float screenHeight;
 uniform sampler2D texture;
 
 void main() {
+    gl_FragColor = vec4(0, 0, 0.15, 1);
+
     float x = gl_FragCoord.x / screenWidth;
     float y = gl_FragCoord.y / screenHeight;
-    if(texture2D(texture, vec2(x, y)).r < 0.5){
-        gl_FragColor = vec4(1, 1, 1, 1);
-    }else{
-        gl_FragColor = vec4(0, 0, 0, 1);
+
+    vec4 tex = texture2D(texture, vec2(x, y));
+    if(tex.r > 0.5){
+        gl_FragColor = vec4(0.8, 0.8, 0.4, 1.);
+    }
+    if(tex.g > 0.5){
+        gl_FragColor = vec4(0.8, 0.8, 0.4, 1.)*min(float(timer-500)/500., 1.);
     }
 }
 </script>
@@ -124,6 +154,7 @@ var app = new Vue({
             screenWidth:    {type: "f", value: window.innerWidth}, 
             screenHeight:   {type: "f", value: window.innerHeight}, 
             texture:        {type: "t", value: undefined},
+            logoTexture:    {type: "t", value: undefined},
             timer:          {type: "i", value: 0},
         }
         this.renderer = new THREE.WebGLRenderer({canvas: this.canvas});
@@ -168,7 +199,8 @@ var app = new Vue({
         this.screenQ = new THREE.Mesh(plane, this.flagmentShaderMaterial)
         this.scene.add(this.screenQ);
 
-        this.uniforms.texture.value = new THREE.TextureLoader().load("img/initial.png", this.initialRender);
+        this.uniforms.logoTexture.value = new THREE.TextureLoader().load("img/logo.png");
+        this.uniforms.texture.value     = new THREE.TextureLoader().load("img/initial.png", this.initialRender);
     },
     methods: {
         initialRender: function() {
