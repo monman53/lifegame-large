@@ -11,56 +11,6 @@ body {
 
 <div id="app">
     <canvas id="canvas" style="height: 100%; width: 100%;"></canvas>
-    <!--<div>-->
-        <!--<table>-->
-            <!--<tbody>-->
-                <!--<tr>-->
-                    <!--<th>Frequency</th>-->
-                    <!--<td><input type='range' min='4' max='600' step='any' v-model='uniforms.f.value' /></td>-->
-                <!--</tr>-->
-                <!--<tr>-->
-                    <!--<th>Type</th>-->
-                    <!--<td><input type='radio' id='circle' value='0' v-model='uniforms.type.value' /><label for='circle'>Circle</label></td>-->
-                    <!--<td><input type='radio' id='sin' value='1' v-model='uniforms.type.value' /><label for='sin'>cos</label></td>-->
-                <!--</tr>-->
-                <!--<tr>-->
-                    <!--<th>RGB</th>-->
-                    <!--<td><input type='color' v-model='color' /></td>-->
-                <!--</tr>-->
-            <!--</tbody>-->
-        <!--</table>-->
-        <!--<table>-->
-            <!--<thead>-->
-                <!--<tr>-->
-                    <!--<th></th>-->
-                    <!--<th>%</th>-->
-                    <!--<th>θ</th>-->
-                <!--</tr>-->
-            <!--</thead>-->
-            <!--<tbody>-->
-                <!--<tr>-->
-                    <!--<th>Cyan</th>-->
-                    <!--<td><input type='range' min='0' max='1' step='any' v-model='uniforms.a.value.x' /></td>-->
-                    <!--<td><input type='range' min='0' max='0.5' step='any' v-model='uniforms.r.value.x' /></td>-->
-                <!--</tr>-->
-                <!--<tr>-->
-                    <!--<th>Magenta</th>-->
-                    <!--<td><input type='range' min='0' max='1' step='any' v-model='uniforms.a.value.y' /></td>-->
-                    <!--<td><input type='range' min='0' max='0.5' step='any' v-model='uniforms.r.value.y' /></td>-->
-                <!--</tr>-->
-                <!--<tr>-->
-                    <!--<th>Yellow</th>-->
-                    <!--<td><input type='range' min='0' max='1' step='any' v-model='uniforms.a.value.z' /></td>-->
-                    <!--<td><input type='range' min='0' max='0.5' step='any' v-model='uniforms.r.value.z' /></td>-->
-                <!--</tr>-->
-                <!--<tr>-->
-                    <!--<th>blacK</th>-->
-                    <!--<td><input type='range' min='0' max='1' step='any' v-model='uniforms.a.value.w' /></td>-->
-                    <!--<td><input type='range' min='0' max='0.5' step='any' v-model='uniforms.r.value.w' /></td>-->
-                <!--</tr>-->
-            <!--</tbody>-->
-        <!--</table>-->
-    <!--</div>-->
 </div>
 
 <script src='js/three.min.js'></script>
@@ -77,29 +27,32 @@ void main() {
 </script>
 
 <script type="x-shader/x-fragment" id="initialShader">
-varying vec2 vUv;
 uniform float screenWidth;
 uniform float screenHeight;
 uniform sampler2D texture;
 
-float random(vec2 st) {
-    return fract(sin(dot(st, vec2(12.9898,78.233))) * 43758.5453123);
-}
+//float random(vec2 st) {
+//    return fract(sin(dot(st, vec2(12.9898,78.233))) * 43758.5453123);
+//}
 
 void main() {
-    gl_FragColor = random((gl_FragCoord.xy) * 0.001) < 0.5 ? vec4(1.0, 0.0, 0.0, 1.0) : vec4(0.0, 0.0, 0.0, 1.0);
+//    gl_FragColor = random((gl_FragCoord.xy) * 0.001) < 0.5 ? vec4(1.0, 0.0, 0.0, 1.0) : vec4(0.0, 0.0, 0.0, 1.0);
+    float x = gl_FragCoord.x / screenWidth;
+    float y = gl_FragCoord.y / screenHeight;
+    gl_FragColor = vec4(0, 0, 0, 0);
+    if(abs(x - 0.5) < 0.5/screenWidth) gl_FragColor = vec4(1, 0, 0, 0);
+    if(abs(y - 0.5) < 0.5/screenHeight) gl_FragColor = vec4(1, 0, 0, 0);
 }
 </script>
 
 <script type="x-shader/x-fragment" id="computeShader">
-varying vec2 vUv;
 uniform float screenWidth;
 uniform float screenHeight;
 uniform sampler2D texture;
 
 void main() {
-    float x = vUv.x;
-    float y = vUv.y;
+    float x = gl_FragCoord.x / screenWidth;
+    float y = gl_FragCoord.y / screenHeight;
     float dx = 1. / screenWidth;
     float dy = 1. / screenHeight;
     int cnt = 0;
@@ -120,17 +73,17 @@ void main() {
 
     if(texture2D(texture, vec2(x, y)).r > 0.5){
         if(cnt <= 1){
-            gl_FragColor = vec4(0, 0, 0, 1);
+            gl_FragColor = vec4(0, 0, 0, 0);
         }else if(cnt <= 3){
-            gl_FragColor = vec4(1, 0, 0, 1);
+            gl_FragColor = vec4(1, 0, 0, 0);
         }else{
-            gl_FragColor = vec4(0, 0, 0, 1);
+            gl_FragColor = vec4(0, 0, 0, 0);
         }
     }else{
         if(cnt == 3){
-            gl_FragColor = vec4(1, 0, 0, 1);
+            gl_FragColor = vec4(1, 0, 0, 0);
         }else{
-            gl_FragColor = vec4(0, 0, 0, 1);
+            gl_FragColor = vec4(0, 0, 0, 0);
         }
     }
 }
@@ -144,9 +97,9 @@ uniform sampler2D texture;
 
 void main() {
     if(texture2D(texture, vUv).r < 0.5){
-        gl_FragColor = vec4(0, 0, 0, 1);
+        gl_FragColor = vec4(1, 1, 1, 1);
     }else{
-        gl_FragColor = vec4(1, 1, 0, 1);
+        gl_FragColor = vec4(0, 0, 0, 1);
     }
 }
 </script>
@@ -212,6 +165,7 @@ var app = new Vue({
         this.renderer.render(this.scene, this.camera);
 
         this.uniforms.texture.value = this.texture[0];
+
         this.pingpong = 0;
         this.animate();
     },
@@ -231,7 +185,5 @@ var app = new Vue({
             requestAnimationFrame( this.animate );
         }
     },
-    watch: {
-    }
 });
 </script>
