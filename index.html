@@ -31,21 +31,22 @@ uniform float screenWidth;
 uniform float screenHeight;
 uniform sampler2D texture;
 
-//float random(vec2 st) {
-//    return fract(sin(dot(st, vec2(12.9898,78.233))) * 43758.5453123);
-//}
-
 void main() {
-//    gl_FragColor = random((gl_FragCoord.xy) * 0.001) < 0.5 ? vec4(1.0, 0.0, 0.0, 1.0) : vec4(0.0, 0.0, 0.0, 1.0);
-    float x = gl_FragCoord.x / screenWidth;
-    float y = gl_FragCoord.y / screenHeight;
-    gl_FragColor = vec4(0, 0, 0, 0);
-    if(abs(x - 0.5) < 0.5/screenWidth) gl_FragColor = vec4(1, 0, 0, 0);
-    if(abs(y - 0.5) < 0.5/screenHeight) gl_FragColor = vec4(1, 0, 0, 0);
+    float x = gl_FragCoord.x;
+    float y = gl_FragCoord.y;
+    float nx = x - float(int(screenWidth/2.))  + 32.;
+    float ny = y - float(int(screenHeight/2.)) + 32.;
+
+    if(texture2D(texture, vec2(nx/64., ny/64.)).r > 0.5){
+        gl_FragColor = vec4(1, 0, 0, 0);
+    }else{
+        gl_FragColor = vec4(0, 0, 0, 0);
+    }
 }
 </script>
 
 <script type="x-shader/x-fragment" id="computeShader">
+uniform int timer;
 uniform float screenWidth;
 uniform float screenHeight;
 uniform sampler2D texture;
@@ -86,17 +87,24 @@ void main() {
             gl_FragColor = vec4(0, 0, 0, 0);
         }
     }
+
+    if(timer == 400){
+        if(abs(gl_FragCoord.x - screenWidth/2.) < 1. && abs(y-0.5) < 0.5*dy){
+            gl_FragColor = vec4(0, 0, 0, 0);
+        }
+    }
 }
 </script>
 
 <script type="x-shader/x-fragment" id="fragmentShader">
-varying vec2 vUv;
 uniform float screenWidth;
 uniform float screenHeight;
 uniform sampler2D texture;
 
 void main() {
-    if(texture2D(texture, vUv).r < 0.5){
+    float x = gl_FragCoord.x / screenWidth;
+    float y = gl_FragCoord.y / screenHeight;
+    if(texture2D(texture, vec2(x, y)).r < 0.5){
         gl_FragColor = vec4(1, 1, 1, 1);
     }else{
         gl_FragColor = vec4(0, 0, 0, 1);
@@ -115,7 +123,8 @@ var app = new Vue({
         this.uniforms = {
             screenWidth:    {type: "f", value: window.innerWidth}, 
             screenHeight:   {type: "f", value: window.innerHeight}, 
-            texture:        {type: "t", value: undefined}
+            texture:        {type: "t", value: undefined},
+            timer:          {type: "i", value: 0},
         }
         this.renderer = new THREE.WebGLRenderer({canvas: this.canvas});
         this.scene = new THREE.Scene();
@@ -159,28 +168,30 @@ var app = new Vue({
         this.screenQ = new THREE.Mesh(plane, this.flagmentShaderMaterial)
         this.scene.add(this.screenQ);
 
-        // initial render
-        this.screenQ.material = this.initialShaderMaterial;
-        this.renderer.setRenderTarget(this.texture[0]);
-        this.renderer.render(this.scene, this.camera);
-
-        this.uniforms.texture.value = this.texture[0];
-
-        this.pingpong = 0;
-        this.animate();
+        this.uniforms.texture.value = new THREE.TextureLoader().load("img/initial.png", this.initialRender);
     },
     methods: {
+        initialRender: function() {
+            this.screenQ.material = this.initialShaderMaterial;
+            this.renderer.setRenderTarget(this.texture[0]);
+            this.renderer.render(this.scene, this.camera);
+            this.uniforms.texture.value = this.texture[0];
+            this.pingpong = 0;
+
+            this.animate();
+        }, 
         animate: function() {
             this.screenQ.material = this.computeShaderMaterial;
             this.renderer.setRenderTarget(this.texture[1-this.pingpong]);
             this.renderer.render(this.scene, this.camera);
-
             this.uniforms.texture.value = this.texture[1-this.pingpong];
+
             this.screenQ.material = this.flagmentShaderMaterial;
             this.renderer.setRenderTarget(null);
             this.renderer.render(this.scene, this.camera);
 
             this.pingpong = 1-this.pingpong;
+            this.uniforms.timer.value += 1;
 
             requestAnimationFrame( this.animate );
         }
